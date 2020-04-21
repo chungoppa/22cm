@@ -2,6 +2,7 @@ import time
 from collections import Counter
 from flask import Flask, request, abort, app
 import json
+import locale
 from linebot.models import *
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
@@ -26,10 +27,13 @@ tmpordersheet = mainsheet.worksheet('tmporder')
 tmpuserinfo = mainsheet.worksheet(('tmpuserinfo'))
 ordersheet = mainsheet.worksheet('orders')
 userinfosheet = mainsheet.worksheet('userinfo')
-questionssheet = mainsheet.worksheet('questionsInOderdelivery')
-submenusheet = mainsheet.worksheet('subMenu')
-menusheet = mainsheet.worksheet('Menu')
+# questionssheet = mainsheet.worksheet('questionsInOderdelivery')
+# submenusheet = mainsheet.worksheet('subMenu')
+# menusheet = mainsheet.worksheet('Menu')
 reportReceiver = mainsheet.worksheet('reportReceiver')
+
+#  locale
+locale.setlocale(locale.LC_ALL, 'de_DE.utf-8')
 # Channel Access Token
 #line_bot_api = LineBotApi('E32ScD/CUH3lsXhc5G0DxYcGNteGlkRllINxS64FasXlTZX/0mwjqRmROimkIHW7VCa2eRmC7wE6jV1VaUDddifZ4hXV8iZUG47tvXDYT2fSRPWSEKIMNfZRhA7wIgRGAq6QKtyvX9GwWH5pRs2aWAdB04t89/1O/w1cDnyilFU=')
 
@@ -63,6 +67,9 @@ def sendGreetingms(event):
             line_bot_api.reply_message(
             event.reply_token,
             TextSendMessage(text='ご登録ありがとうございます。 \nこちらは居酒屋「くーろん」・原田商店のページでございます。\nこちらからレストラン予約・食材、弁当のデリバリー注文が可能です。 \n下記メニューからお進みください。\n今後とも宜しくお願いします。'))
+
+
+
 @handler.add((MessageEvent),message=TextMessage)
 def getUserinfo(event):
     text = event.message.text
@@ -71,7 +78,7 @@ def getUserinfo(event):
     except:
         tmp = None
     if tmp is None:
-        line_bot_api.reply_message(event.reply_token, TextSendMessage(text='Stop texting dude !'))
+        print("")
     else:
         col= None
         row =None
@@ -145,8 +152,7 @@ def getUserinfo(event):
             line_bot_api.reply_message(event.reply_token,[TextSendMessage(text='並べ替える場合は、もう一度食材・弁当デリバリーを選択します \nさて、今私はあなたにもう一度あなたの情報を尋ねます'),TextSendMessage(text='お名前を教えてください。?')])
             new = [str(event.source.user_id), ""]
             tmpuserinfo.insert_row(new)
-        else :
-            line_bot_api.reply_message(event.reply_token, TextSendMessage(text='stop texting dude  。'))
+
 def getorderfromlist(list):
     strorder = ''
     tmplist = list
@@ -157,16 +163,17 @@ def getorderfromlist(list):
         totalprice = totalprice+ price
         strorder = strorder + str(i) +' : x '+ str(count) +'    -    ' + str(price)+'\n'
     return strorder + '\n Total :'+str(totalprice)
-def getReportofOrder(event,rowinTmpuserInfo):
-    question_list = questionssheet.row_values(2)
-    tmpuserinfo_list = tmpuserinfo.row_values(rowinTmpuserInfo)
-    getUserInfofromList(question_list,tmpuserinfo_list)
-    line_bot_api.reply_message(event.reply_token,TextSendMessage(text=getUserInfofromList(question_list,tmpuserinfo_list),quick_reply=QuickReply(items=[
-                QuickReplyButton(
-                    action=MessageAction(label="Ok", text="ok")
-                ), QuickReplyButton(
-                    action=MessageAction(label="Edit", text="edit")
-                )])))
+
+# def getReportofOrder(event,rowinTmpuserInfo):
+#     question_list = questionssheet.row_values(2)
+#     tmpuserinfo_list = tmpuserinfo.row_values(rowinTmpuserInfo)
+#     getUserInfofromList(question_list,tmpuserinfo_list)
+#     line_bot_api.reply_message(event.reply_token,TextSendMessage(text=getUserInfofromList(question_list,tmpuserinfo_list),quick_reply=QuickReply(items=[
+#                 QuickReplyButton(
+#                     action=MessageAction(label="Ok", text="ok")
+#                 ), QuickReplyButton(
+#                     action=MessageAction(label="Edit", text="edit")
+#                 )])))
 def getUserInfofromList(qlist,ulist):
     string = 'Here is your infomation :'
     i=1
@@ -174,256 +181,7 @@ def getUserInfofromList(qlist,ulist):
         string = '\n'+ string +str(num) +  str(ulist[i])
         i=i+1
     return string
-def getpricebyname(name) :
-    if name == '天婦羅':
-        return 900
-    elif name == 'すき焼き':
-        return 2000
-    elif name =='hamburger':
-        return 200
-    elif name == 'pizza':
-        return 700
-def getcarousel():
-    carousel ="""{
-    "type": "carousel",
-    "contents": [
-      {
-        "type": "bubble",
-        "hero": {
-          "type": "image",
-          "url": "https://haithuycatering.com/image/5c300d9951046d646e172578/original.jpg",
-          "size": "full",
-          "aspectRatio": "20:13",
-          "aspectMode": "cover"
-        },
-        "body": {
-          "type": "box",
-          "layout": "vertical",
-          "spacing": "sm",
-          "contents": [
-            {
-              "type": "text",
-              "text": "天麩羅",
-              "size": "xl",
-              "weight": "bold",
-              "wrap": true
-            },
-            {
-              "type": "box",
-              "layout": "baseline",
-              "contents": [
-                {
-                  "type": "text",
-                  "text": "¥900",
-                  "flex": 0,
-                  "size": "xl",
-                  "weight": "bold",
-                  "wrap": true
-                }
-              ]
-            }
-          ]
-        },
-        "footer": {
-          "type": "box",
-          "layout": "vertical",
-          "spacing": "sm",
-          "contents": [
-            {
-              "type": "button",
-              "action": {
-                "type": "postback",
-                "label": "Add to Cart",
-                "data": "1"
-              },
-              "style": "primary"
-            }
-          ]
-        }
-      },
-      {
-        "type": "bubble",
-        "hero": {
-          "type": "image",
-          "url": "https://product.hstatic.net/1000308381/product/fotolia_130245786_subscription_monthly_m_master.jpg",
-          "size": "full",
-          "aspectRatio": "20:13",
-          "aspectMode": "cover"
-        },
-        "body": {
-          "type": "box",
-          "layout": "vertical",
-          "spacing": "sm",
-          "contents": [
-            {
-              "type": "text",
-              "text": "すき焼き",
-              "size": "xl",
-              "weight": "bold",
-              "wrap": true
-            },
-            {
-              "type": "box",
-              "layout": "baseline",
-              "contents": [
-                {
-                  "type": "text",
-                  "text": "¥2000",
-                  "flex": 0,
-                  "size": "xl",
-                  "weight": "bold",
-                  "wrap": true
-                }
-              ]
-            }
-          ]
-        },
-        "footer": {
-          "type": "box",
-          "layout": "vertical",
-          "spacing": "sm",
-          "contents": [
-            {
-              "type": "button",
-              "action": {
-                "type": "postback",
-                "label": "Add to Cart",
-                "data": "2"
-              },
-              "style": "primary"
-            }
-          ]
-        }
-      }
-    ]
-  }"""
-    return carousel
-def getcarousel2():
-    carousel ="""{
-    "type": "carousel",
-    "contents": [
-      {
-        "type": "bubble",
-        "hero": {
-          "type": "image",
-          "url": "https://www.thewholesomedish.com/wp-content/uploads/2019/04/The-Best-Classic-Hamburgers-550.jpg",
-          "size": "full",
-          "aspectRatio": "20:13",
-          "aspectMode": "cover"
-        },
-        "body": {
-          "type": "box",
-          "layout": "vertical",
-          "spacing": "sm",
-          "contents": [
-            {
-              "type": "text",
-              "text": "Hamburger",
-              "size": "xl",
-              "weight": "bold",
-              "wrap": true
-            },
-            {
-              "type": "box",
-              "layout": "baseline",
-              "contents": [
-                {
-                  "type": "text",
-                  "text": "¥900",
-                  "flex": 0,
-                  "size": "xl",
-                  "weight": "bold",
-                  "wrap": true
-                }
-              ]
-            }
-          ]
-        },
-        "footer": {
-          "type": "box",
-          "layout": "vertical",
-          "spacing": "sm",
-          "contents": [
-            {
-              "type": "button",
-              "action": {
-                "type": "postback",
-                "label": "Add to Cart",
-                "data": "3"
-              },
-              "style": "primary"
-            }
-          ]
-        }
-      },
-      {
-        "type": "bubble",
-        "hero": {
-          "type": "image",
-          "url": "https://storage.googleapis.com/phx2-uat-wordpress-uploads/1/2019/03/Fan-Favourite-640x390.jpg",
-          "size": "full",
-          "aspectRatio": "20:13",
-          "aspectMode": "cover"
-        },
-        "body": {
-          "type": "box",
-          "layout": "vertical",
-          "spacing": "sm",
-          "contents": [
-            {
-              "type": "text",
-              "text": "pizza",
-              "size": "xl",
-              "weight": "bold",
-              "wrap": true
-            },
-            {
-              "type": "box",
-              "layout": "baseline",
-              "contents": [
-                {
-                  "type": "text",
-                  "text": "¥2000",
-                  "flex": 0,
-                  "size": "xl",
-                  "weight": "bold",
-                  "wrap": true
-                }
-              ]
-            }
-          ]
-        },
-        "footer": {
-          "type": "box",
-          "layout": "vertical",
-          "spacing": "sm",
-          "contents": [
-            {
-              "type": "button",
-              "action": {
-                "type": "postback",
-                "label": "Add to Cart",
-                "data": "4"
-              },
-              "style": "primary"
-            }
-          ]
-        }
-      }
-    ]
-  }"""
-    return carousel
-def xxx(event):
-    rownum = sheet.row_count
-    cell_list = sheet.range('A1:A{}'.format(rownum))
-    for cell in cell_list:
-        if cell.value == event.source.user_id:
-            sheet.delete_row(cell.row)
-            renew = [str(event.source.user_id), "", "", "", "", ""]
-            sheet.insert_row(renew)
-            return
-    renew = [str(event.source.user_id), "", "", "", "", ""]
-    sheet.insert_row(renew)
+
 def clearorder(event):
     tmp = None
     tmp2 = None
@@ -436,6 +194,308 @@ def clearorder(event):
         tmpordersheet.delete_row(tmp.row)
     if not tmp2 is None :
         tmpuserinfo.delete_row(tmp2.row)
+
+def getpricebyname(name):
+    if name == 'サンマの開き':
+        return 60000
+    elif name == '塩サバ切り身' :
+        return 60000
+    elif name == 'サケ切り身':
+        return 75000
+    elif name == 'サワラの味噌漬け':
+        return 65000
+    elif name == '野菜サラダ':
+        return 20000
+    elif name == 'れんこんキンピラ':
+        return 30000
+    elif name == 'ひじきの炒め煮':
+        return 30000
+    elif name == '高菜のじゃこ炒め':
+        return 30000
+    elif name == '紅茶豚（スライス５枚）':
+        return 110000
+    elif name == '手作り冷凍餃子（５個）':
+        return 35000
+    elif name == '砂肝にんにく炒め':
+        return 80000
+    elif name == 'ハンバーグ（ソース付）':
+        return 110000
+    elif name == 'エビチリ':
+        return 100000
+    elif name == 'サバの味噌煮':
+        return 100000
+    elif name == '豚生姜焼き':
+        return 90000
+    elif name == 'レバニラ炒め':
+        return 90000
+    elif name == '手羽醤油焼き':
+        return 90000
+    elif name == '中華丼（ソースのみ）':
+        return 100000
+
+# '生鮮食品
+def submenu1(event):
+    サンマの開き = request.url_root + '/static/サンマの開き.JPG'
+    塩サバ切り身 = request.url_root + '/static/塩サバ切り身.JPG'
+    サケ切り身 = request.url_root + '/static/サケ切り身.JPG'
+    サワラの味噌漬け = request.url_root +'/static/サワラの味噌漬け.JPG'
+    carousel_template = CarouselTemplate(columns=[
+        CarouselColumn(text=format(getpricebyname('サンマの開き'),',d'), title='サンマの開き',
+                       thumbnail_image_url=サンマの開き, actions=[PostbackAction(label='カートに追加', data='サンマの開き')]),
+        CarouselColumn(text=format(getpricebyname('塩サバ切り身'),',d'), title='塩サバ切り身',
+                       thumbnail_image_url=塩サバ切り身, actions=[PostbackAction(label='カートに追加', data='塩サバ切り身')]),
+        CarouselColumn(text=format(getpricebyname('サケ切り身'),',d'), title='サケ切り身',
+                       thumbnail_image_url=サケ切り身, actions=[PostbackAction(label='カートに追加', data='サケ切り身')]),
+        CarouselColumn(text=format(getpricebyname('サワラの味噌漬け'),',d'), title='サワラの味噌漬け',
+                       thumbnail_image_url=サワラの味噌漬け, actions=[PostbackAction(label='カートに追加', data='サワラの味噌漬け')])
+    ])
+    template_message = TemplateSendMessage(
+        alt_text='Carousel alt text', template=carousel_template)
+    line_bot_api.reply_message(event.reply_token, template_message)
+
+# 一品物
+def submenu2(event):
+    紅茶豚= request.url_root + '/static/紅茶豚（スライス５枚）.JPG'
+    手作り = request.url_root + '/static/1.JPG'
+    砂肝にんにく炒め = request.url_root + '/static/砂肝にんにく炒め.JPG'
+    ハンバーグ = request.url_root +'/static/ハンバーグ（ソース付）.JPG'
+
+    エビチリ = request.url_root +'/static/エビチリ.JPG'
+    サバの味噌煮 = request.url_root + '/static/サバの味噌煮.JPG'
+    豚生姜焼き = request.url_root + '/static/豚生姜焼き.JPG'
+    レバニラ炒め = request.url_root + '/static/レバニラ炒め.JPG'
+
+    手羽醤油焼き = request.url_root + '/static/手羽醤油焼き.JPG'
+    中華丼 = request.url_root + '/static/中華丼（ソースのみ）.JPG'
+    carousel_template = CarouselTemplate(columns=[
+        CarouselColumn(text=format(getpricebyname('紅茶豚（スライス５枚）'),',d'), title='紅茶豚（スライス５枚）',
+                       thumbnail_image_url=紅茶豚, actions=[PostbackAction(label='カートに追加', data='紅茶豚（スライス５枚）')]),
+        CarouselColumn(text=format(getpricebyname('手作り冷凍餃子（５個）'),',d'), title='手作り冷凍餃子（５個）',
+                        thumbnail_image_url=手作り, actions=[PostbackAction(label='カートに追加', data='手作り冷凍餃子（５個）')]),
+        CarouselColumn(text=format(getpricebyname('砂肝にんにく炒め'),',d'), title='砂肝にんにく炒め',
+                       thumbnail_image_url=砂肝にんにく炒め, actions=[PostbackAction(label='カートに追加', data='砂肝にんにく炒め')]),
+        CarouselColumn(text=format(getpricebyname('ハンバーグ（ソース付）'),',d'), title='ハンバーグ',
+                       thumbnail_image_url=ハンバーグ, actions=[PostbackAction(label='カートに追加', data='ハンバーグ')]),
+
+        CarouselColumn(text=format(getpricebyname('エビチリ'),',d'),title='エビチリ',
+                       thumbnail_image_url=エビチリ, actions=[PostbackAction(label='カートに追加', data='エビチリ')]),
+        CarouselColumn(text=format(getpricebyname('サバの味噌煮'),',d'), title='サバの味噌煮',
+                       thumbnail_image_url=サバの味噌煮, actions=[PostbackAction(label='カートに追加', data='サバの味噌煮')]),
+        CarouselColumn(text=format(getpricebyname('豚生姜焼き'),',d'), title='豚生姜焼き',
+                       thumbnail_image_url=豚生姜焼き, actions=[PostbackAction(label='カートに追加', data='豚生姜焼き')]),
+        CarouselColumn(text=format(getpricebyname('レバニラ炒め'),',d'), title='レバニラ炒め',
+                       thumbnail_image_url=レバニラ炒め, actions=[PostbackAction(label='カートに追加', data='レバニラ炒め')]),
+
+        CarouselColumn(text=format(getpricebyname('手羽醤油焼き'),',d'), title='手羽醤油焼き',
+                       thumbnail_image_url=手羽醤油焼き, actions=[PostbackAction(label='カートに追加', data='手羽醤油焼き')]),
+        CarouselColumn(text=format(getpricebyname('中華丼（ソースのみ）'),',d'), title='中華丼（ソースのみ）',
+                       thumbnail_image_url=中華丼, actions=[PostbackAction(label='カートに追加', data='中華丼（ソースのみ）')]),
+    ])
+    template_message = TemplateSendMessage(
+        alt_text='Carousel alt text', template=carousel_template)
+    line_bot_api.reply_message(event.reply_token, template_message)
+
+# お潰物・サラダ他　約一人前
+def submenu3(event):
+    野菜サラダ = request.url_root + '/static/野菜サラダ.JPG'
+    carousel_template = CarouselTemplate(columns=[
+        CarouselColumn(text=format(getpricebyname('野菜サラダ'),',d'), title='野菜サラダ',
+                       thumbnail_image_url=野菜サラダ, actions=[PostbackAction(label='カートに追加', data='野菜サラダ')]),
+    ])
+    template_message = TemplateSendMessage(
+        alt_text='Carousel alt text', template=carousel_template)
+    line_bot_api.reply_message(event.reply_token, template_message)
+
+# お惣菜1袋50ｇ 約一人前
+def submenu4(event):
+    れんこんキンピラ = request.url_root + '/static/れんこんキンピラ.JPG'
+    ひじきの炒め煮 = request.url_root + '/static/ひじきの炒め煮.JPG'
+    高菜のじゃこ炒め = request.url_root + '/static/高菜のじゃこ炒め.JPG'
+    carousel_template = CarouselTemplate(columns=[
+        CarouselColumn(text=format(getpricebyname('れんこんキンピラ'),',d'), title='れんこんキンピラ',
+                       thumbnail_image_url=れんこんキンピラ, actions=[PostbackAction(label='カートに追加', data='れんこんキンピラ')]),
+        CarouselColumn(text=format(getpricebyname('ひじきの炒め煮'),',d'), title='ひじきの炒め煮',
+                       thumbnail_image_url=ひじきの炒め煮, actions=[PostbackAction(label='カートに追加', data='ひじきの炒め煮')]),
+        CarouselColumn(text=format(getpricebyname('高菜のじゃこ炒め'),',d'), title='サケ切り身',
+                       thumbnail_image_url=高菜のじゃこ炒め, actions=[PostbackAction(label='カートに追加', data='高菜のじゃこ炒め')]),
+    ])
+    template_message = TemplateSendMessage(
+        alt_text='Carousel alt text', template=carousel_template)
+    line_bot_api.reply_message(event.reply_token, template_message)
+
+
+#  カートに追加 and handle Post back event
+@handler.add(PostbackEvent)
+def handle_postback(event):
+    # sub1
+    if event.postback.data == 'サンマの開き':
+        addtocart(event,"サンマの開き")
+        line_bot_api.reply_message(event.reply_token,
+                                   TextSendMessage(text='サンマの開きカートに追加 ', quick_reply=QuickReply(
+                                           items=[
+                                               QuickReplyButton(
+                                                   action=MessageAction(label="完了", text="完了")
+                                               )])))
+    elif event.postback.data == '塩サバ切り身':
+        addtocart(event,"塩サバ切り身")
+        line_bot_api.reply_message(event.reply_token,
+                                   TextSendMessage(text='塩サバ切り身カートに追加', quick_reply=QuickReply(
+                                           items=[
+                                               QuickReplyButton(
+                                                   action=MessageAction(label="完了", text="完了")
+                                               )])))
+    elif event.postback.data == 'サケ切り身':
+        addtocart(event, "サケ切り身")
+        line_bot_api.reply_message(event.reply_token,
+                                   TextSendMessage(text='サケ切り身カートに追加', quick_reply=QuickReply(
+                                       items=[
+                                           QuickReplyButton(
+                                               action=MessageAction(label="完了", text="完了")
+                                           )])))
+    elif event.postback.data =='サワラの味噌漬け':
+        addtocart(event, "サワラの味噌漬け")
+        line_bot_api.reply_message(event.reply_token,
+                                   TextSendMessage(text='サワラの味噌漬けカートに追加', quick_reply=QuickReply(
+                                       items=[
+                                           QuickReplyButton(
+                                               action=MessageAction(label="完了", text="完了")
+                                           )])))
+    # sub2
+    elif event.postback.data == '紅茶豚（スライス５枚）':
+        addtocart(event,"紅茶豚（スライス５枚）")
+        line_bot_api.reply_message(event.reply_token,
+                                   TextSendMessage(text='紅茶豚（スライス５枚）カートに追加', quick_reply=QuickReply(
+                                           items=[
+                                               QuickReplyButton(
+                                                   action=MessageAction(label="完了", text="完了")
+                                               )])))
+    elif event.postback.data == '手作り-冷凍餃子':
+        addtocart(event, "手作り-冷凍餃子")
+        line_bot_api.reply_message(event.reply_token,
+                                   TextSendMessage(text='手作り-冷凍餃子カートに追加', quick_reply=QuickReply(
+                                       items=[
+                                           QuickReplyButton(
+                                               action=MessageAction(label="完了", text="完了")
+                                           )])))
+    elif event.postback.data =='砂肝にんにく炒め':
+        addtocart(event, "砂肝にんにく炒め")
+        line_bot_api.reply_message(event.reply_token,
+                                   TextSendMessage(text='砂肝にんにく炒めカートに追加', quick_reply=QuickReply(
+                                       items=[
+                                           QuickReplyButton(
+                                               action=MessageAction(label="完了", text="完了")
+                                           )])))
+
+    elif event.postback.data == 'ハンバーグ（ソース付）':
+        addtocart(event,"ハンバーグ（ソース付）")
+        line_bot_api.reply_message(event.reply_token,
+                                   TextSendMessage(text='ハンバーグ（ソース付）カートに追加', quick_reply=QuickReply(
+                                           items=[
+                                               QuickReplyButton(
+                                                   action=MessageAction(label="完了", text="完了")
+                                               )])))
+    elif event.postback.data == 'エビチリ':
+        addtocart(event, "エビチリ")
+        line_bot_api.reply_message(event.reply_token,
+                                   TextSendMessage(text='エビチリ', quick_reply=QuickReply(
+                                       items=[
+                                           QuickReplyButton(
+                                               action=MessageAction(label="完了", text="完了")
+                                           )])))
+    elif event.postback.data =='サバの味噌煮':
+        addtocart(event, "サバの味噌煮")
+        line_bot_api.reply_message(event.reply_token,
+                                   TextSendMessage(text='サバの味噌煮カートに追加', quick_reply=QuickReply(
+                                       items=[
+                                           QuickReplyButton(
+                                               action=MessageAction(label="完了", text="完了")
+                                           )])))
+
+    elif event.postback.data == '豚生姜焼き':
+        addtocart(event,"豚生姜焼き")
+        line_bot_api.reply_message(event.reply_token,
+                                   TextSendMessage(text='豚生姜焼きカートに追加', quick_reply=QuickReply(
+                                           items=[
+                                               QuickReplyButton(
+                                                   action=MessageAction(label="完了", text="完了")
+                                               )])))
+    elif event.postback.data == 'レバニラ炒め':
+        addtocart(event, "レバニラ炒め")
+        line_bot_api.reply_message(event.reply_token,
+                                   TextSendMessage(text='レバニラ炒めカートに追加', quick_reply=QuickReply(
+                                       items=[
+                                           QuickReplyButton(
+                                               action=MessageAction(label="完了", text="完了")
+                                           )])))
+    elif event.postback.data =='手羽醤油焼き':
+        addtocart(event, "手羽醤油焼き")
+        line_bot_api.reply_message(event.reply_token,
+                                   TextSendMessage(text='手羽醤油焼きカートに追加', quick_reply=QuickReply(
+                                       items=[
+                                           QuickReplyButton(
+                                               action=MessageAction(label="完了", text="完了")
+                                           )])))
+
+    elif event.postback.data == '中華丼（ソースのみ）':
+        addtocart(event,"中華丼（ソースのみ）")
+        line_bot_api.reply_message(event.reply_token,
+                                   TextSendMessage(text='中華丼（ソースのみ）カートに追加', quick_reply=QuickReply(
+                                           items=[
+                                               QuickReplyButton(
+                                                   action=MessageAction(label="完了", text="完了")
+                                               )])))
+    #     sub3
+    elif event.postback.data == '野菜サラダ':
+        addtocart(event,"野菜サラダ")
+        line_bot_api.reply_message(event.reply_token,
+                                   TextSendMessage(text='野菜サラダカートに追加', quick_reply=QuickReply(
+                                           items=[
+                                               QuickReplyButton(
+                                                   action=MessageAction(label="完了", text="完了")
+                                               )])))
+    #         sub4
+    elif event.postback.data == 'れんこんキンピラ':
+        addtocart(event,"れんこんキンピラ")
+        line_bot_api.reply_message(event.reply_token,
+                                   TextSendMessage(text='れんこんキンピラカートに追加', quick_reply=QuickReply(
+                                           items=[
+                                               QuickReplyButton(
+                                                   action=MessageAction(label="完了", text="完了")
+                                               )])))
+    elif event.postback.data == 'ひじきの炒め煮':
+        addtocart(event, "ひじきの炒め煮")
+        line_bot_api.reply_message(event.reply_token,
+                                   TextSendMessage(text='ひじきの炒め煮カートに追加', quick_reply=QuickReply(
+                                       items=[
+                                           QuickReplyButton(
+                                               action=MessageAction(label="完了", text="完了")
+                                           )])))
+    elif event.postback.data =='高菜のじゃこ炒め':
+        addtocart(event, "高菜のじゃこ炒め")
+        line_bot_api.reply_message(event.reply_token,
+                                   TextSendMessage(text='高菜のじゃこ炒めカートに追加', quick_reply=QuickReply(
+                                       items=[
+                                           QuickReplyButton(
+                                               action=MessageAction(label="完了", text="完了")
+                                           )])))
+
+def addtocart(event,orderid):
+    # tmp = None
+    try:
+        tmp = tmpordersheet.find(str(event.source.user_id))
+    except:
+        tmp = None
+    if tmp is None:
+        renew = [str(event.source.user_id), str(orderid)]
+        tmpordersheet.insert_row(renew)
+    else:
+        cell_list = tmpordersheet.range('A'+str(tmp.row) +':Z'+str(tmp.row))
+        for cell in cell_list:
+            if cell.value == '':
+                tmpordersheet.update_cell(cell.row,cell.col,str(orderid))
+
+                return
+
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     message = TextSendMessage(text=event.message.text)
@@ -451,57 +511,31 @@ def handle_message(event):
     elif text == '食材・弁当デリバリー':
         clearorder(event)
         carousel_template = CarouselTemplate(columns=[
-            CarouselColumn(text='pizza, hamburger , cocacola.....', title='生鮮食品', thumbnail_image_url='https://cache5.amanaimages.com/preview640/11014027918.jpg', actions=[
+            CarouselColumn(text=' ', title='生鮮食品', actions=[
                 MessageAction(label='生鮮食品', text='生鮮食品')
             ]),
-            CarouselColumn(text='Makizushi , Miso soup, tempura ....', title='お潰物・サラダ他-約一人前',thumbnail_image_url='https://d18gmz9e98r8v5.cloudfront.net/review/20200301055026_1674288578_9.jpg', actions=[
+            CarouselColumn(text=' ', title='お潰物・サラダ他-約一人前', actions=[
                 MessageAction(label='お潰物・サラダ他 \n 約一人前', text='お潰物・サラダ他-約一人前')
             ]),
-            CarouselColumn(text='pizza, hamburger , cocacola.....', title='一品物',thumbnail_image_url='https://geography-vnu.edu.vn/wp-content/uploads/wordpress/b%C3%A0i-lu%E1%BA%ADn-ti%E1%BA%BFng-Anh-v%E1%BB%81-m%C3%B3n-%C4%83n-nhanh.jpg',actions=[
+            CarouselColumn(text=' ', title='一品物',actions=[
                                MessageAction(label='一品物', text='一品物')
                            ]),
-            CarouselColumn(text='Makizushi , Miso soup, tempura ....', title='お漬け物',thumbnail_image_url='https://cdn.macaro-ni.jp/assets/img/shutterstock/shutterstock_305525699.jpg',actions=[
-                               MessageAction(label='お漬け物', text='お漬け物')
+            CarouselColumn(text=' ', title='お惣菜1袋50ｇ-約一人前',actions=[
+                               MessageAction(label='お惣菜1袋50ｇ-約一人前', text='お惣菜1袋50ｇ-約一人前')
                            ]),
         ])
         template_message = TemplateSendMessage(
             alt_text='Carousel alt text', template=carousel_template)
         line_bot_api.reply_message(event.reply_token, template_message)
-        # getsubmenu(event)
-        # bubble = getcarousel()
-        # # xxx(event)
-        # message = FlexSendMessage(alt_text="hello", contents=json.loads(bubble))
-        # line_bot_api.reply_message(
-        #     event.reply_token,[
-        #     TextSendMessage(text='以下は当社の食材・弁当デリバリーューメニューです。\n注文完了したら、「完了」ボタンを押してください。'),message]
-        # )
+
     elif text == '生鮮食品':
-        サンマの開き = request.url_root + '/static/サンマの開き.JPG'
-        塩サバ切り身 = request.url_root + '/static/塩サバ切り身.JPG'
-        サケ切り身 = request.url_root + '/static/サケ切り身.JPG'
-        carousel_template = CarouselTemplate(columns=[
-            CarouselColumn(text='Price : 60000 vnd', title='サンマの開き',
-                           thumbnail_image_url=サンマの開き, actions=[MessageAction(label='Add To Cart', text='サンマの開き')]),
-            CarouselColumn(text='Price : 60000 vnd', title='塩サバ切り身',
-                           thumbnail_image_url=塩サバ切り身,actions=[MessageAction(label='Add To Cart', text='塩サバ切り身')]),
-            CarouselColumn(text='Price : 60000 vnd', title='サケ切り身',
-                           thumbnail_image_url=サケ切り身, actions=[MessageAction(label='Add To Cart', text='サケ切り身')]),
-            CarouselColumn(text='Price : 60000 vnd', title='塩サバ切り身',
-                           thumbnail_image_url=塩サバ切り身, actions=[MessageAction(label='Add To Cart', text='塩サバ切り身')]),
-        ])
-
-
-
-        template_message = TemplateSendMessage(
-            alt_text='Carousel alt text', template=carousel_template)
-        line_bot_api.reply_message(event.reply_token, template_message)
-    elif text == 'mainmeal':
-        bubble = getcarousel()
-        message = FlexSendMessage(alt_text="hello", contents=json.loads(bubble))
-        line_bot_api.reply_message(
-            event.reply_token,[
-            TextSendMessage(text='以下は当社の食材・弁当デリバリーューメニューです。\n注文完了したら、「完了」ボタンを押してください。'),message]
-        )
+        submenu1(event)
+    elif text=='一品物':
+        submenu2(event)
+    elif text == 'お潰物・サラダ他-約一人前':
+        submenu3(event)
+    elif text == 'お惣菜1袋50ｇ-約一人前':
+        submenu4(event)
     elif text == 'お問合せ':
         clearorder(event)
         line_bot_api.reply_message(
@@ -532,7 +566,7 @@ def handle_message(event):
                                        TextSendMessage(text=' Ok-desu ! now you can re-order '))
         except :
             line_bot_api.reply_message(event.reply_token, TextSendMessage(text='Add at least 1 item to your cart befor cancel ! idiot '))
-    elif text == 'checkout':
+    elif text == '完了':
         try:
             tmp = tmpordersheet.find(str(event.source.user_id))
         except:
@@ -554,96 +588,10 @@ def handle_message(event):
                 tmpuserinfo.insert_row(new)
     elif 1==1:
         getUserinfo(event)
-def getpricebyName(name):
-    if name == 'サンマの開き':
-        return 60000
-    elif name == '塩サバ切り身' :
-        return 60000
-    elif name == 'サケ切り身' :
-        return 75000
-    elif name == 'サワラの味噌漬け':
-        return 65000
-    elif name == '野菜サラダ':
-        return 20000
-    elif name == 'れんこんキンピラ':
-        return 30000
-    elif name == 'ひじきの炒め煮':
-        return 30000
-    elif name == '高菜のじゃこ炒め':
-        return 30000
-    elif name == '紅茶豚（スライス５枚）':
-        return 11000
-    elif name == '手作り-冷凍餃子（５個）':
-        return 0
-    elif name == '砂肝にんにく炒め':
-        return 80000
-    elif name == 'ハンバーグ（ソース付）':
-        return 110000
-    elif name == 'エビチリ':
-        return 100000
-    elif name == 'サバの味噌煮':
-        return 100000
-    elif name == '豚生姜焼き':
-        return 90000
-    elif name == 'レバニラ炒め':
-        return 90000
-    elif name == '手羽醤油焼き':
-        return 90000
-    elif name == '中華丼（ソースのみ）':
-        return 100000
 
 
-def addtocart(event,orderid):
-    # tmp = None
-    try:
-        tmp = tmpordersheet.find(str(event.source.user_id))
-    except:
-        tmp = None
-    if tmp is None:
-        renew = [str(event.source.user_id), str(orderid)]
-        tmpordersheet.insert_row(renew)
-    else:
-        cell_list = tmpordersheet.range('A'+str(tmp.row) +':Z'+str(tmp.row))
-        for cell in cell_list:
-            if cell.value == '':
-                tmpordersheet.update_cell(cell.row,cell.col,str(orderid))
-                return
 
-#  Post back event
-@handler.add(PostbackEvent)
-def handle_postback(event):
-    if event.postback.data == '1':
-        addtocart(event,"天婦羅")
-        line_bot_api.reply_message(event.reply_token,
-                                   TextSendMessage(text='天婦羅カートに追加 ', quick_reply=QuickReply(
-                                           items=[
-                                               QuickReplyButton(
-                                                   action=MessageAction(label="Check out", text="checkout")
-                                               )])))
-    elif event.postback.data == '2':
-        addtocart(event,"すき焼き")
-        line_bot_api.reply_message(event.reply_token,
-                                   TextSendMessage(text='すき焼きカートに追加', quick_reply=QuickReply(
-                                           items=[
-                                               QuickReplyButton(
-                                                   action=MessageAction(label="Check out", text="checkout")
-                                               )])))
-    elif event.postback.data == '3':
-        addtocart(event, "hamburger")
-        line_bot_api.reply_message(event.reply_token,
-                                   TextSendMessage(text='Hamburgerカートに追加', quick_reply=QuickReply(
-                                       items=[
-                                           QuickReplyButton(
-                                               action=MessageAction(label="Check out", text="checkout")
-                                           )])))
-    elif event.postback.data =='4':
-        addtocart(event, "pizza")
-        line_bot_api.reply_message(event.reply_token,
-                                   TextSendMessage(text='Pizzaカートに追加', quick_reply=QuickReply(
-                                       items=[
-                                           QuickReplyButton(
-                                               action=MessageAction(label="Check out", text="checkout")
-                                           )])))
+
 import os
 
 if __name__ == "__main__":
