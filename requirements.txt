@@ -2,3 +2,4 @@ google-api-python-client
 gspread
 line-bot-sdk
 flask
+oauth2client
