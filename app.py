@@ -444,7 +444,7 @@ def handle_postback(event):
         tmpuserinfo.update_cell(row, 6, datetime)
         line_bot_api.reply_message(event.reply_token,[
                                    TextSendMessage(text='ok i got your time : '+datetime ),
-                                    TextSendMessage(text='ご希望の配達日時を教えてください。')])
+                                    TextSendMessage(text='その他特別な要求がありますか？')])
 
 @handler.add(MessageEvent, message=LocationMessage)
 def handle_location_message(event):
